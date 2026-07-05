@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2022 Matrix Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f9f9f8;
+    --surface: #ffffff;
+    --surface-1: #f1f0eb;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-muted: #888780;
+    --accent: #185fa5;
+    --accent-bg: #e6f1fb;
+    --accent-text: #0c447c;
+    --success: #3b6d11;
+    --success-bg: #eaf3de;
+    --success-text: #27500a;
+    --warning-bg: #faeeda;
+    --warning-text: #854f0b;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'SF Mono', 'Fira Mono', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18; --surface: #2c2c2a; --surface-1: #222220;
+      --border: rgba(255,255,255,0.1); --border-strong: rgba(255,255,255,0.18);
+      --text-primary: #f1f0eb; --text-secondary: #b4b2a9; --text-muted: #888780;
+      --accent: #85b7eb; --accent-bg: #042c53; --accent-text: #b5d4f4;
+      --success: #97c459; --success-bg: #173404; --success-text: #c0dd97;
+      --warning-bg: #412402; --warning-text: #fac775;
+    }
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text-primary); min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 780px; margin: 0 auto; }
+  .page-title { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6; }
+  .section { margin-bottom: 2rem; }
+  .sec-label { font-size: 11px; font-weight: 500; letter-spacing: .07em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .wr { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .wr:last-child { margin-bottom: 0; }
+  .wlabel { font-size: 13px; color: var(--text-secondary); width: 130px; flex-shrink: 0; }
+  .wval { font-size: 13px; font-weight: 500; color: var(--text-primary); font-family: var(--mono); width: 34px; text-align: right; flex-shrink: 0; }
+  input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+  .total-warn { font-size: 12px; color: var(--warning-text); background: var(--warning-bg); border-radius: var(--radius); padding: 6px 10px; margin-top: 10px; display: none; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  .tbl th { text-align: left; font-weight: 500; color: var(--text-secondary); padding: 7px 8px; border-bottom: 0.5px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .tbl td { padding: 5px 6px; border-bottom: 0.5px solid var(--border); color: var(--text-secondary); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl td:first-child { font-weight: 500; color: var(--text-primary); }
+  .stat-input { width: 100%; font-size: 12px; font-family: var(--mono); padding: 4px 6px; border-radius: 4px; border: 0.5px solid var(--border); background: var(--surface-1); color: var(--text-primary); text-align: center; }
+  .stat-input:focus { outline: none; border-color: var(--accent); }
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rank-table th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; padding: 7px 12px; border-bottom: 0.5px solid var(--border); }
+  .rank-table td { padding: 9px 12px; border-bottom: 0.5px solid var(--border); color: var(--text-secondary); }
+  .rank-table tr:last-child td { border-bottom: none; }
+  .rank-table td:first-child { font-weight: 500; color: var(--text-muted); font-family: var(--mono); width: 30px; }
+  .rank-table td:nth-child(2) { font-weight: 500; color: var(--text-primary); }
+  .rank-table tr.top td { background: var(--success-bg); }
+  .rank-table tr.top td:first-child, .rank-table tr.top td:nth-child(2) { color: var(--success-text); }
+  .score-val { font-family: var(--mono); font-weight: 500; color: var(--text-primary); }
+  .rank-table tr.top .score-val { color: var(--success-text); }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar-bg { flex: 1; background: var(--surface-1); border-radius: 4px; height: 8px; overflow: hidden; min-width: 60px; }
+  .bar-fill { height: 8px; border-radius: 4px; background: var(--accent); transition: width .25s; }
+  .rank-table tr.top .bar-fill { background: var(--success); }
+
+  .dot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .dot-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; }
+  .dot-card.is-top { border-color: var(--success); background: var(--success-bg); }
+  .dot-name { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+  .dot-card.is-top .dot-name { color: var(--success-text); }
+  .dot-flag { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+  .dot-rows { font-family: var(--mono); font-size: 12px; line-height: 1.85; color: var(--text-secondary); }
+  .dot-rows .contrib { color: var(--text-primary); }
+  .dot-rows .stat-name { color: var(--text-muted); font-size: 11px; }
+  .dot-total { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border); font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .dot-card.is-top .dot-total { color: var(--success-text); }
+  .dot-card.is-top .dot-rows .contrib { color: var(--success-text); }
+
+  .reset-btn { font-size: 13px; color: var(--text-muted); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 6px 14px; cursor: pointer; }
+  .reset-btn:hover { color: var(--text-primary); background: var(--surface-1); }
+  .flag-tag { font-size: 11px; color: var(--text-muted); }
+  .tbl-wrap { overflow-x: auto; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+  .footer { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 2rem; }
+  .top-badge { font-size: 10px; font-weight: 500; background: var(--success-bg); color: var(--success-text); border-radius: 20px; padding: 2px 8px; margin-left: 6px; border: 0.5px solid var(--success); vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-title">WC 2022 Matrix Performance Calculator</div>
+  <p class="page-sub">Adjust weights and edit player stats. The calculator computes s = M · w using matrix multiplication and shows the full dot product for every player.</p>
+
+  <div class="section">
+    <div class="sec-label">Weight vector w</div>
+    <div class="card">
+      <div class="wr"><span class="wlabel">Goals</span><input type="range" min="0" max="1" step="0.05" value="0.35" id="w-goals"><span class="wval" id="wv-goals">0.35</span></div>
+      <div class="wr"><span class="wlabel">Assists</span><input type="range" min="0" max="1" step="0.05" value="0.20" id="w-assists"><span class="wval" id="wv-assists">0.20</span></div>
+      <div class="wr"><span class="wlabel">Key passes</span><input type="range" min="0" max="1" step="0.05" value="0.20" id="w-keyp"><span class="wval" id="wv-keyp">0.20</span></div>
+      <div class="wr"><span class="wlabel">Shots on target</span><input type="range" min="0" max="1" step="0.05" value="0.15" id="w-shots"><span class="wval" id="wv-shots">0.15</span></div>
+      <div class="wr"><span class="wlabel">Def. actions</span><input type="range" min="0" max="1" step="0.05" value="0.10" id="w-def"><span class="wval" id="wv-def">0.10</span></div>
+      <div class="total-warn" id="total-warn">Weights sum to <strong id="total-sum"></strong>. For fair comparison they should sum to 1.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-label">Player matrix M (edit any cell)</div>
+    <div class="card" style="padding:0.75rem 0.5rem;">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:100px">Player</th>
+              <th style="width:58px">Goals</th>
+              <th style="width:58px">Assists</th>
+              <th style="width:72px">Key passes</th>
+              <th style="width:72px">Shots OT</th>
+              <th style="width:72px">Def. actions</th>
+            </tr>
+          </thead>
+          <tbody id="player-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-label">Ranking: s = M · w</div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table class="rank-table">
+        <thead><tr><th>#</th><th>Player</th><th>Weighted score</th><th>Relative bar</th></tr></thead>
+        <tbody id="rank-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-label">Dot product breakdown — all players</div>
+    <div class="dot-grid" id="dot-grid"></div>
+  </div>
+
+  <hr class="divider">
+  <div style="text-align:right; margin-bottom:1rem;">
+    <button class="reset-btn" onclick="resetAll()">Reset to default stats</button>
+  </div>
+  <div class="footer">2022 FIFA World Cup Qatar · Linear Algebra Presentation · s = M · w</div>
+
+</div>
+<script>
+const DEFAULT = [
+  {name:"Messi",    co:"ARG", goals:7,  assists:3, keyp:21, shots:13, def:8},
+  {name:"Ronaldo",  co:"POR", goals:1,  assists:0, keyp:3,  shots:3,  def:3},
+  {name:"Di Maria", co:"ARG", goals:1,  assists:2, keyp:10, shots:4,  def:4},
+  {name:"Pulisic",  co:"USA", goals:1,  assists:1, keyp:6,  shots:5,  def:8},
+  {name:"Mbappe",   co:"FRA", goals:8,  assists:2, keyp:11, shots:11, def:4},
+  {name:"Hakimi",   co:"MAR", goals:1,  assists:2, keyp:5,  shots:3,  def:17},
+  {name:"Neymar",   co:"BRA", goals:2,  assists:1, keyp:7,  shots:6,  def:5},
+  {name:"Modric",   co:"CRO", goals:1,  assists:1, keyp:10, shots:4,  def:10},
+];
+const SK = ["goals","assists","keyp","shots","def"];
+const SL = ["Goals","Assists","Key passes","Shots on target","Def. actions"];
+let players = DEFAULT.map(p=>({...p}));
+
+function getW(){
+  return {
+    goals:  parseFloat(document.getElementById("w-goals").value),
+    assists:parseFloat(document.getElementById("w-assists").value),
+    keyp:   parseFloat(document.getElementById("w-keyp").value),
+    shots:  parseFloat(document.getElementById("w-shots").value),
+    def:    parseFloat(document.getElementById("w-def").value),
+  };
+}
+function sc(p,w){ return SK.reduce((s,k)=>s+p[k]*w[k],0); }
+
+function buildTable(){
+  const tbody = document.getElementById("player-body");
+  tbody.innerHTML = "";
+  players.forEach((p,pi)=>{
+    const tr = document.createElement("tr");
+    let html = `<td>${p.name}<br><span class="flag-tag">${p.co}</span></td>`;
+    SK.forEach(k=>{
+      html += `<td><input class="stat-input" type="number" min="0" max="99" value="${p[k]}" data-pi="${pi}" data-k="${k}"></td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+  document.querySelectorAll(".stat-input").forEach(el=>{
+    el.addEventListener("input", function(){
+      players[parseInt(this.dataset.pi)][this.dataset.k] = parseFloat(this.value)||0;
+      updateRanking();
+    });
+  });
+}
+
+function updateRanking(){
+  const w = getW();
+  const sum = SK.reduce((s,k)=>s+w[k],0);
+  const warnEl = document.getElementById("total-warn");
+  document.getElementById("total-sum").textContent = sum.toFixed(2);
+  warnEl.style.display = Math.abs(sum-1)>0.05 ? "block" : "none";
+
+  const scored = players.map(p=>({...p, score:sc(p,w)}));
+  scored.sort((a,b)=>b.score-a.score);
+  const max = scored[0].score || 1;
+
+  const tbody = document.getElementById("rank-body");
+  tbody.innerHTML = "";
+  scored.forEach((p,rank)=>{
+    const tr = document.createElement("tr");
+    if(rank===0) tr.className="top";
+    const barW = Math.round((p.score/max)*100);
+    tr.innerHTML = `<td>${rank+1}</td>
+      <td>${p.name} <span class="flag-tag">${p.co}</span>${rank===0?'<span class="top-badge">top</span>':''}</td>
+      <td><span class="score-val">${p.score.toFixed(2)}</span></td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div></div></td>`;
+    tbody.appendChild(tr);
+  });
+
+  buildDotGrid(scored, w);
+}
+
+function buildDotGrid(scored, w){
+  const grid = document.getElementById("dot-grid");
+  grid.innerHTML = "";
+  scored.forEach((p, rank)=>{
+    const isTop = rank === 0;
+    const card = document.createElement("div");
+    card.className = "dot-card" + (isTop ? " is-top" : "");
+
+    let rowsHtml = "";
+    let terms = [];
+    SK.forEach((k,i)=>{
+      const contrib = (p[k] * w[k]).toFixed(2);
+      terms.push(contrib);
+      rowsHtml += `<div>
+        (${String(p[k]).padStart(2, "\u2007")}) x (${w[k].toFixed(2)}) = <span class="contrib">${contrib}</span>
+        <span class="stat-name">[${SL[i]}]</span>
+      </div>`;
+    });
+
+    const termStr = terms.join(" + ");
+
+    card.innerHTML = `
+      <div class="dot-name">${p.name}${isTop ? ' <span class="top-badge">top</span>' : ''}</div>
+      <div class="dot-flag">${p.co} · rank ${rank+1}</div>
+      <div class="dot-rows">${rowsHtml}</div>
+      <div class="dot-total">${termStr} = ${p.score.toFixed(2)}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.querySelectorAll("input[type=range]").forEach(el=>{
+  el.addEventListener("input", function(){
+    document.getElementById(this.id.replace("w-","wv-")).textContent = parseFloat(this.value).toFixed(2);
+    updateRanking();
+  });
+});
+
+function resetAll(){
+  players = DEFAULT.map(p=>({...p}));
+  const defs = {goals:0.35, assists:0.20, keyp:0.20, shots:0.15, def:0.10};
+  Object.entries(defs).forEach(([k,v])=>{
+    document.getElementById("w-"+k).value = v;
+    document.getElementById("wv-"+k).textContent = v.toFixed(2);
+  });
+  buildTable();
+  updateRanking();
+}
+
+buildTable();
+updateRanking();
+</script>
+</body>
+</html>
