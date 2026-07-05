@@ -1,0 +1,1 @@
+# wc2022-calculator
